@@ -7,37 +7,53 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="bg"></div>
-
   <main class="wrap">
-    <header class="top">
-      <div class="badge">💌 Валентинка</div>
-      <h1 id="title">Я тебе люблю</h1>
-      <p id="subtitle">Натисни серце ✨</p>
-    </header>
+    <div class="badge">💌 ВАЛЕНТИНКА</div>
+    <h1>Я тебе люблю</h1>
+    <p class="sub">Натисни серце ✨</p>
 
     <section class="card">
-      <canvas id="c"></canvas>
+      <div id="ui" class="ui">
+        <div class="heart">
+          <div class="heart__inner" aria-hidden="true">
+            <!-- 16 рядків, як у реф (можеш збільшити/зменшити) -->
+            <div class="love_horizontal" style="--i:0"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:1"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:2"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:3"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:4"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:5"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:6"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:7"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:8"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:9"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:10"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:11"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:12"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:13"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:14"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+            <div class="love_horizontal" style="--i:15"><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span><span class="love_word">i love you</span></div>
+          </div>
+        </div>
+      </div>
 
-      <button id="btn" class="btn" aria-label="Toggle message">
-        Відкрити послання
-      </button>
+      <button id="btn" class="btn">Відкрити послання</button>
 
       <div id="msg" class="msg hidden">
         <h2>Моє послання для тебе</h2>
-        <p id="letter">
-          Ти — моя найтепліша людина. Дякую, що ти є. ❤️<br/>
-          Хочу ще багато-багато наших днів разом.
-        </p>
+        <p>Ти — моя найтепліша людина. Дякую, що ти є. ❤️<br/>Хочу ще багато-багато наших днів разом.</p>
         <div class="sig">— Твоя Ніка</div>
       </div>
     </section>
-
-    <footer class="foot">
-      <span>Зроблено з любов’ю ✨</span>
-    </footer>
   </main>
 
-  <script src="script.js"></script>
+  <script>
+    const btn = document.getElementById("btn");
+    const msg = document.getElementById("msg");
+    btn.addEventListener("click", () => {
+      msg.classList.toggle("hidden");
+      btn.textContent = msg.classList.contains("hidden") ? "Відкрити послання" : "Сховати послання";
+    });
+  </script>
 </body>
 </html>
