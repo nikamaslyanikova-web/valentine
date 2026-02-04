@@ -15,45 +15,137 @@ function resize() {
   canvas.width = Math.floor(rect.width * dpr);
   canvas.height = Math.floor(rect.height * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  buildPath(); // перебудувати точки під новий розмір
 }
 window.addEventListener("resize", resize);
-resize();
 
-// ====== Налаштування (можеш підкрутити) ======
-const phrase = "i love you ";
+// ===== НАЛАШТУВАННЯ під “як в референсі” =====
+const TEXT = "I love you";        // можеш: "Кохаю тебе"
 const fontSize = 18;
-const layers = 5;          // було 12+ (лагало). 4-6 ок
-const pointsCount = 220;   // було ~820 (лагало). 180-260 ок
-const textEvery = 2;       // малювати текст не на кожній точці
-const tilt = -0.35;        // нахил тексту як у референсі
-const speed = 10;          // швидкість “бігу” тексту
+const lanes = 9;                  // кількість “рядів” тексту (менше = чистіше)
+const laneSpacing = 12;           // відстань між рядами (більше = як у реф)
+const wordGap = 34;               // відстань між словами вздовж контуру
+const speed = 35;                 // швидкість бігу (px/сек)
+const tilt = -0.35;               // легкий нахил як у реф
+const rotateHeart = -0.10;        // трохи повернути серце (рад)
+const scaleMul = 0.94;            // масштаб серця
 
-const glow1 = "rgba(255, 140, 214, 0.9)";
-const glow2 = "rgba(255, 200, 240, 0.85)";
+const color = "rgba(255, 160, 220, 0.85)";
+const glow = "rgba(255, 160, 220, 0.85)";
 
-// ====== Серце (класична крива) ======
-function heartPoint(a) {
-  const x = 16 * Math.pow(Math.sin(a), 3);
-  const y = 13 * Math.cos(a) - 5 * Math.cos(2*a) - 2 * Math.cos(3*a) - Math.cos(4*a);
+// ===== МАТЕМАТИКА СЕРЦЯ (точки + довжина) =====
+let path = [];        // [{x,y,tx,ty,nx,ny,s}]  s = cumulative length
+let totalLen = 0;
+
+function heartParam(t) {
+  // класична крива серця (добре як у референсі, якщо правильно відскейлити)
+  const x = 16 * Math.pow(Math.sin(t), 3);
+  const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
   return { x, y };
 }
 
-// Попередньо рахуємо точки + кути дотичної (1 раз)
-const pts = [];
-for (let i = 0; i < pointsCount; i++) {
-  const a = (i / pointsCount) * Math.PI * 2;
-  const p = heartPoint(a);
-  const a2 = ((i + 1) / pointsCount) * Math.PI * 2;
-  const p2 = heartPoint(a2);
+function buildPath() {
+  const w = canvas.getBoundingClientRect().width;
+  const h = canvas.getBoundingClientRect().height;
 
-  const tx = p2.x - p.x;
-  const ty = p2.y - p.y;
-  const ang = Math.atan2(ty, tx) + tilt;
+  const cx = w / 2;
+  const cy = h / 2 + 10;
 
-  pts.push({ x: p.x * 1.05, y: p.y * 1.0, ang });
+  // підберемо масштаб до полотна
+  const base = Math.min(w, h) * 0.020 * scaleMul;
+
+  // Дискретизація контуру (чим більше — тим плавніше, але не треба дуже багато)
+  const N = 520;
+
+  // Спочатку точки в “heart space”
+  const pts = [];
+  for (let i = 0; i <= N; i++) {
+    const t = (i / N) * Math.PI * 2;
+    let p = heartParam(t);
+
+    // форма ближче до референсу: трохи ширше по X і компактніше по Y
+    p.x *= 1.10;
+    p.y *= 1.00;
+
+    // перенесення в пікселі + інверт Y
+    let x = p.x * base;
+    let y = -p.y * base;
+
+    // поворот серця
+    const cr = Math.cos(rotateHeart);
+    const sr = Math.sin(rotateHeart);
+    const xr = x * cr - y * sr;
+    const yr = x * sr + y * cr;
+
+    pts.push({ x: cx + xr, y: cy + yr });
+  }
+
+  // Тепер рахуємо тангенси/нормалі і накопичену довжину
+  path = [];
+  totalLen = 0;
+
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    const pPrev = pts[(i - 1 + pts.length) % pts.length];
+    const pNext = pts[(i + 1) % pts.length];
+
+    // тангенс як напрямок між сусідами
+    let tx = pNext.x - pPrev.x;
+    let ty = pNext.y - pPrev.y;
+    const tl = Math.hypot(tx, ty) || 1;
+    tx /= tl; ty /= tl;
+
+    // нормаль (перпендикуляр)
+    let nx = -ty;
+    let ny = tx;
+
+    // крок довжини
+    if (i > 0) {
+      totalLen += Math.hypot(p.x - pts[i - 1].x, p.y - pts[i - 1].y);
+    }
+
+    path.push({ x: p.x, y: p.y, tx, ty, nx, ny, s: totalLen });
+  }
+
+  // замкнути довжину
+  totalLen += Math.hypot(pts[0].x - pts[pts.length - 1].x, pts[0].y - pts[pts.length - 1].y);
 }
 
-// ====== Рендер ======
+function pointAtLen(L) {
+  // L може бути будь-яке (зациклимо)
+  L = ((L % totalLen) + totalLen) % totalLen;
+
+  // лінійний пошук для простоти (path ~ 500, норм по швидкості)
+  // якщо захочеш — можна бінпошук, але не треба
+  for (let i = 1; i < path.length; i++) {
+    if (path[i].s >= L) {
+      const a = path[i - 1];
+      const b = path[i];
+      const segLen = (b.s - a.s) || 1;
+      const t = (L - a.s) / segLen;
+
+      const x = a.x + (b.x - a.x) * t;
+      const y = a.y + (b.y - a.y) * t;
+
+      // інтерполяція напрямків
+      const tx = a.tx + (b.tx - a.tx) * t;
+      const ty = a.ty + (b.ty - a.ty) * t;
+      const tl = Math.hypot(tx, ty) || 1;
+
+      const itx = tx / tl;
+      const ity = ty / tl;
+
+      const nx = -ity;
+      const ny = itx;
+
+      return { x, y, tx: itx, ty: ity, nx, ny };
+    }
+  }
+  return path[0];
+}
+
+// ===== РЕНДЕР =====
+resize();
 let t0 = performance.now();
 
 function draw() {
@@ -65,47 +157,42 @@ function draw() {
 
   ctx.clearRect(0, 0, w, h);
 
-  // масштаб
-  const pulse = 1 + 0.03 * Math.sin(time * 2.1);
-  const scale = Math.min(w, h) * 0.022 * pulse;
-
-  const cx = w / 2;
-  const cy = h / 2 + 10;
-
   ctx.font = `600 ${fontSize}px ui-sans-serif, system-ui`;
-  ctx.textAlign = "center";
+  ctx.textAlign = "left";
   ctx.textBaseline = "middle";
 
-  // менше шарів = швидше, але все ще “об’ємно”
-  for (let layer = 0; layer < layers; layer++) {
-    const z = (layer - (layers - 1) / 2) / ((layers - 1) / 2); // -1..1
-    const depth = 0.35 + 0.65 * (1 - Math.abs(z));
+  ctx.fillStyle = color;
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = glow;
 
-    const rot = time * 0.55;
-    const ox = z * 10 * Math.cos(rot + 0.9);
-    const oy = z * 8 * Math.sin(rot + 0.9);
+  // робимо “доріжки” тексту паралельно контуру (як у референсі)
+  // центральна доріжка + симетрично назовні/всередину
+  const mid = (lanes - 1) / 2;
 
-    ctx.globalAlpha = depth;
-    ctx.fillStyle = layer % 2 === 0 ? glow1 : glow2;
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = glow1;
+  for (let lane = 0; lane < lanes; lane++) {
+    const k = lane - mid;                 // -..0..+
+    const offset = k * laneSpacing;       // відступ нормаллю
 
-    for (let i = 0; i < pts.length; i += textEvery) {
-      const p = pts[i];
+    // трохи прозорості для глибини (але без “заливки”)
+    ctx.globalAlpha = 0.28 + 0.72 * (1 - Math.min(1, Math.abs(k) / (mid + 0.0001)));
 
-      // позиція точки серця в пікселях
-      const px = cx + ox + p.x * scale;
-      const py = cy + oy - p.y * scale;
+    // “біг” по довжині
+    const run = time * speed + lane * 7;
 
-      // шматок тексту, що “біжить”
-      const s = phrase.repeat(4);
-      const shift = Math.floor((time * speed + i * 0.18 + layer * 0.6) % phrase.length);
-      const txt = s.slice(shift, shift + 18);
+    // розставляємо слова вздовж контуру з кроком wordGap
+    for (let L = 0; L < totalLen; L += wordGap) {
+      const p = pointAtLen(L + run);
+
+      const x = p.x + p.nx * offset;
+      const y = p.y + p.ny * offset;
+
+      // кут по тангенсу + легкий нахил як у реф
+      const ang = Math.atan2(p.ty, p.tx) + tilt;
 
       ctx.save();
-      ctx.translate(px, py);
-      ctx.rotate(p.ang);
-      ctx.fillText(txt, 0, 0);
+      ctx.translate(x, y);
+      ctx.rotate(ang);
+      ctx.fillText(TEXT, 0, 0);
       ctx.restore();
     }
   }
