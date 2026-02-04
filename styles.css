@@ -8,6 +8,7 @@
 
 *{box-sizing:border-box}
 html,body{height:100%}
+
 body{
   margin:0;
   color:var(--text);
@@ -24,6 +25,7 @@ body{
   place-items:center;
   padding:22px;
   gap:10px;
+  text-align:center;
 }
 
 .badge{
@@ -38,7 +40,7 @@ body{
 }
 
 h1{margin:6px 0 0; font-size:clamp(26px,3.6vw,44px)}
-.sub{margin:0 0 10px; color:var(--muted)}
+.sub{margin:0 0 12px; color:var(--muted)}
 
 .card{
   width:min(860px, 94vw);
@@ -61,7 +63,10 @@ h1{margin:6px 0 0; font-size:clamp(26px,3.6vw,44px)}
   position:relative;
 }
 
+/* ВАЖЛИВО: canvas має займати весь stage */
 #heartCanvas{
+  position:absolute;
+  inset:0;
   width:100%;
   height:100%;
   display:block;
@@ -80,6 +85,7 @@ h1{margin:6px 0 0; font-size:clamp(26px,3.6vw,44px)}
 }
 
 .msg{
+  text-align:left;
   padding:16px;
   border-radius:18px;
   border:1px solid rgba(255,255,255,.12);
