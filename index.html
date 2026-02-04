@@ -18,42 +18,37 @@
 
         <g class="ring r1">
           <text>
-            <textPath href="#heartPath" startOffset="0%">
+            <textPath href="#heartPath" startOffset="0%" data-speed="0.8">
               i love you • я тебе люблю • i love you • я тебе люблю • i love you • я тебе люблю •
             </textPath>
-            <animate attributeName="startOffset" from="0%" to="100%" dur="14s" repeatCount="indefinite" />
           </text>
         </g>
         <g class="ring r2">
           <text>
-            <textPath href="#heartPath" startOffset="12%">
+            <textPath href="#heartPath" startOffset="12%" data-speed="1">
               i love you • я тебе люблю • i love you • я тебе люблю • i love you • я тебе люблю •
             </textPath>
-            <animate attributeName="startOffset" from="12%" to="112%" dur="16s" repeatCount="indefinite" />
           </text>
         </g>
         <g class="ring r3">
           <text>
-            <textPath href="#heartPath" startOffset="24%">
+            <textPath href="#heartPath" startOffset="24%" data-speed="1.2">
               i love you • я тебе люблю • i love you • я тебе люблю • i love you • я тебе люблю •
             </textPath>
-            <animate attributeName="startOffset" from="24%" to="124%" dur="18s" repeatCount="indefinite" />
           </text>
         </g>
         <g class="ring r4">
           <text>
-            <textPath href="#heartPath" startOffset="36%">
+            <textPath href="#heartPath" startOffset="36%" data-speed="1.4">
               i love you • я тебе люблю • i love you • я тебе люблю • i love you • я тебе люблю •
             </textPath>
-            <animate attributeName="startOffset" from="36%" to="136%" dur="20s" repeatCount="indefinite" />
           </text>
         </g>
         <g class="ring r5">
           <text>
-            <textPath href="#heartPath" startOffset="48%">
+            <textPath href="#heartPath" startOffset="48%" data-speed="1.6">
               i love you • я тебе люблю • i love you • я тебе люблю • i love you • я тебе люблю •
             </textPath>
-            <animate attributeName="startOffset" from="48%" to="148%" dur="22s" repeatCount="indefinite" />
           </text>
         </g>
       </svg>
@@ -62,5 +57,24 @@
         <p>Ти моє серце</p>
       </div>
     </main>
+
+    <script>
+      const rings = Array.from(document.querySelectorAll("textPath"));
+      const baseOffsets = rings.map((ring) => parseFloat(ring.getAttribute("startOffset")) || 0);
+      const speeds = rings.map((ring) => parseFloat(ring.dataset.speed) || 1);
+      let start = null;
+
+      function tick(ts) {
+        if (!start) start = ts;
+        const t = (ts - start) / 1000;
+        rings.forEach((ring, i) => {
+          const offset = (baseOffsets[i] + t * speeds[i] * 6) % 100;
+          ring.setAttribute("startOffset", `${offset}%`);
+        });
+        requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
+    </script>
   </body>
 </html>
