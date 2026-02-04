@@ -63,13 +63,9 @@ h1{margin:6px 0 0; font-size:clamp(26px,3.6vw,44px)}
   position:relative;
 }
 
-/* ВАЖЛИВО: canvas має займати весь stage */
-#heartCanvas{
+.plotly{
   position:absolute;
   inset:0;
-  width:100%;
-  height:100%;
-  display:block;
 }
 
 .btn{
