@@ -1,11 +1,5 @@
-
-/**
- * Серце з повторюваного тексту по кривій + легка 3D-ілюзія через шарування.
- * Працює швидко і виглядає "як з рілсів".
- */
-
 const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d", { alpha: true });
 
 const btn = document.getElementById("btn");
 const msg = document.getElementById("msg");
@@ -16,8 +10,8 @@ btn.addEventListener("click", () => {
 });
 
 function resize() {
-  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
   const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
   canvas.width = Math.floor(rect.width * dpr);
   canvas.height = Math.floor(rect.height * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -25,23 +19,42 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-// --- Налаштування, які ти можеш змінити:
+// ====== Налаштування (можеш підкрутити) ======
 const phrase = "i love you ";
-const glowColor = "rgba(255, 140, 214, 0.85)";
-const glowColor2 = "rgba(255, 200, 240, 0.85)";
-const baseSize = 18;    // базовий розмір тексту
-const layers = 12;      // “товщина” серця
-const density = 820;    // скільки точок по кривій
+const fontSize = 18;
+const layers = 5;          // було 12+ (лагало). 4-6 ок
+const pointsCount = 220;   // було ~820 (лагало). 180-260 ок
+const textEvery = 2;       // малювати текст не на кожній точці
+const tilt = -0.35;        // нахил тексту як у референсі
+const speed = 10;          // швидкість “бігу” тексту
 
-let t0 = performance.now();
+const glow1 = "rgba(255, 140, 214, 0.9)";
+const glow2 = "rgba(255, 200, 240, 0.85)";
 
+// ====== Серце (класична крива) ======
 function heartPoint(a) {
-  // класична параметрична "heart curve"
-  // a: 0..2π
   const x = 16 * Math.pow(Math.sin(a), 3);
   const y = 13 * Math.cos(a) - 5 * Math.cos(2*a) - 2 * Math.cos(3*a) - Math.cos(4*a);
-  return {x, y};
+  return { x, y };
 }
+
+// Попередньо рахуємо точки + кути дотичної (1 раз)
+const pts = [];
+for (let i = 0; i < pointsCount; i++) {
+  const a = (i / pointsCount) * Math.PI * 2;
+  const p = heartPoint(a);
+  const a2 = ((i + 1) / pointsCount) * Math.PI * 2;
+  const p2 = heartPoint(a2);
+
+  const tx = p2.x - p.x;
+  const ty = p2.y - p.y;
+  const ang = Math.atan2(ty, tx) + tilt;
+
+  pts.push({ x: p.x * 1.05, y: p.y * 1.0, ang });
+}
+
+// ====== Рендер ======
+let t0 = performance.now();
 
 function draw() {
   const now = performance.now();
@@ -52,95 +65,52 @@ function draw() {
 
   ctx.clearRect(0, 0, w, h);
 
-  // легке “дихання”
+  // масштаб
   const pulse = 1 + 0.03 * Math.sin(time * 2.1);
-
-  // центр і масштаб
   const scale = Math.min(w, h) * 0.022 * pulse;
 
-  // повільна ротація (псевдо-3D)
-  const rot = time * 0.55;
+  const cx = w / 2;
+  const cy = h / 2 + 10;
 
-  ctx.save();
-  ctx.translate(w/2, h/2 + 10);
+  ctx.font = `600 ${fontSize}px ui-sans-serif, system-ui`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
-  // тінь/світіння
-  ctx.shadowBlur = 22;
-  ctx.shadowColor = glowColor;
-
+  // менше шарів = швидше, але все ще “об’ємно”
   for (let layer = 0; layer < layers; layer++) {
-    const z = (layer - layers/2) / (layers/2); // -1..1
+    const z = (layer - (layers - 1) / 2) / ((layers - 1) / 2); // -1..1
     const depth = 0.35 + 0.65 * (1 - Math.abs(z));
 
-    // “3D”: трошки зсув і масштаб від шару
-    const sx = 1 + z * 0.06 * Math.cos(rot);
-    const sy = 1 + z * 0.06 * Math.sin(rot);
+    const rot = time * 0.55;
     const ox = z * 10 * Math.cos(rot + 0.9);
     const oy = z * 8 * Math.sin(rot + 0.9);
 
-    ctx.save();
-    ctx.translate(ox, oy);
-    ctx.scale(scale * sx, -scale * sy);
+    ctx.globalAlpha = depth;
+    ctx.fillStyle = layer % 2 === 0 ? glow1 : glow2;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = glow1;
 
-    // колір шару
-    ctx.fillStyle = layer % 2 === 0 ? glowColor : glowColor2;
-    ctx.globalAlpha = 0.35 + 0.65 * depth;
+    for (let i = 0; i < pts.length; i += textEvery) {
+      const p = pts[i];
 
-    // шрифт у “нормальному” просторі (тому тимчасово повернемось)
-    ctx.scale(1/(scale*sx), -1/(scale*sy));
-    ctx.font = `600 ${baseSize + layer*0.25}px ui-sans-serif, system-ui`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+      // позиція точки серця в пікселях
+      const px = cx + ox + p.x * scale;
+      const py = cy + oy - p.y * scale;
 
-    // повертаємось в "heart space"
-    ctx.scale(scale*sx, -scale*sy);
+      // шматок тексту, що “біжить”
+      const s = phrase.repeat(4);
+      const shift = Math.floor((time * speed + i * 0.18 + layer * 0.6) % phrase.length);
+      const txt = s.slice(shift, shift + 18);
 
-    // обхід кривої
-    const step = (Math.PI * 2) / density;
-
-    // невеликий нахил як у референсі
-    const tilt = -0.35;
-
-    for (let i = 0; i < density; i++) {
-      const a = i * step;
-      const p = heartPoint(a);
-
-      // трохи “приплюснути” серце
-      const hx = p.x * 1.05;
-      const hy = p.y * 1.00;
-
-      // позиція в піксельному просторі
-      const px = hx * scale;
-      const py = -hy * scale;
-
-      // кут дотичної для орієнтації тексту
-      const p2 = heartPoint(a + step);
-      const tx = (p2.x - p.x);
-      const ty = (p2.y - p.y);
-      const ang = Math.atan2(ty, tx) + tilt;
-
-      // малюємо текст
       ctx.save();
-      ctx.setTransform(1, 0, 0, 1, 0, 0); // в пікселі
-      ctx.translate(w/2 + ox + px, h/2 + 10 + oy + py);
-      ctx.rotate(ang);
-      ctx.shadowBlur = 16;
-      ctx.shadowColor = glowColor;
-
-      const s = phrase.repeat(3);
-      // зсув по часу щоб "бігло"
-      const shift = (time * 18 + i * 0.15 + layer * 0.6) % phrase.length;
-      const txt = s.slice(Math.floor(shift), Math.floor(shift) + 18);
-
+      ctx.translate(px, py);
+      ctx.rotate(p.ang);
       ctx.fillText(txt, 0, 0);
       ctx.restore();
     }
-
-    ctx.restore();
   }
 
-  ctx.restore();
-
+  ctx.globalAlpha = 1;
   requestAnimationFrame(draw);
 }
 
