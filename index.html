@@ -5,16 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Валентинка ❤️</title>
   <link rel="stylesheet" href="./style.css" />
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
   <main class="wrap">
     <div class="badge">💌 ВАЛЕНТИНКА</div>
     <h1>Я тебе люблю</h1>
-    <p class="sub">Натисни серце ✨</p>
+    <p class="sub">Покрути сердечко ✨</p>
 
     <section class="card">
       <div class="stage">
-        <canvas id="heartCanvas"></canvas>
+        <div id="plotlyHeart" class="plotly"></div>
       </div>
 
       <button id="btn" class="btn">Відкрити послання</button>
