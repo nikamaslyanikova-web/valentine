@@ -1,81 +1,122 @@
-// ======= Toggle message =======
+// ======= toggle message =======
 const btn = document.getElementById("btn");
 const msg = document.getElementById("msg");
-
 btn.addEventListener("click", () => {
   msg.classList.toggle("hidden");
   btn.textContent = msg.classList.contains("hidden") ? "Відкрити послання" : "Сховати послання";
 });
 
-// ======= Canvas heart =======
-const canvas = document.getElementById("heartCanvas");
-const ctx = canvas.getContext("2d", { alpha: true });
+// ======= 3D Heart (Plotly) =======
+// Це JS-версія: будує 3D-серце параметрично (без Python),
+// працює на GitHub Pages і виглядає красиво + обертається.
 
-const S = {
-  text: "I love you",
-  fontSize: 18,
-  letterSpacing: 2,
-  color: "rgba(234,128,176,0.90)",
-  glow: "rgba(255,255,255,0.60)",
-  glowBlur: 10,
+const el = document.getElementById("plotlyHeart");
 
-  // менше написів (як у реф)
-  gapMin: 40,
-  gapExtra: 12,
-
-  // рух
-  speed: 44,
-  tilt: -Math.PI / 6, // -30deg
-  rotateHeart: -0.18,
-
-  // форма/масштаб
-  scaleMul: 1.02,
-
-  // ліва частина тонша, права “обʼємніша”
-  leftLanes: 7,
-  leftSpacing: 11,
-  rightLanes: 13,
-  rightSpacing: 7,
-
-  depthX: 26,
-  depthY: -12,
-};
-
-let path = [];
-let totalLen = 0;
-
-function heartParam(t){
+// параметрична 2D-крива серця (класична)
+function heart2D(t){
   const x = 16 * Math.pow(Math.sin(t), 3);
   const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
   return { x, y };
 }
 
-function buildPath(){
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
+// будуємо "товсте" 3D: екструзія вздовж v (товщина)
+function buildHeartPoints({
+  du = 0.08,
+  dv = 0.22,
+  thickness = 0.32,
+  scale = 0.065
+} = {}){
+  const xs = [], ys = [], zs = [];
 
-  const cx = w * 0.50;
-  const cy = h * 0.52;
+  // u: по контуру, v: по товщині
+  for(let u=0; u<=Math.PI*2 + 1e-9; u += du){
+    const p = heart2D(u);
+    // трохи ширше як у реф
+    const bx = p.x * 1.12;
+    const by = p.y * 1.02;
 
-  const base = Math.min(w, h) * 0.020 * S.scaleMul;
+    for(let v=-Math.PI; v<=Math.PI + 1e-9; v += dv){
+      // товщина з м’яким “заокругленням”
+      const r = 1 + 0.20*Math.cos(v);
+      const z = thickness * Math.sin(v);
 
-  const N = 1000;
-  const pts = [];
+      xs.push(bx * r * scale);
+      ys.push(by * r * scale);
+      zs.push(z * scale * 16);
+    }
+  }
+  return { xs, ys, zs };
+}
 
-  for(let i=0;i<=N;i++){
-    const t = (i/N) * Math.PI * 2;
-    let p = heartParam(t);
+const { xs, ys, zs } = buildHeartPoints();
 
-    // під реф: трохи ширше
-    p.x *= 1.13;
-    p.y *= 1.02;
+// красивий рожево-фіолетовий градієнт без шкали
+const trace = {
+  type: "scatter3d",
+  mode: "markers",
+  x: xs,
+  y: ys,
+  z: zs,
+  marker: {
+    size: 2.2,
+    color: zs,
+    colorscale: "twilight",
+    opacity: 0.95,
+    showscale: false
+  },
+  hoverinfo: "skip"
+};
 
-    let x = p.x * base;
-    let y = -p.y * base;
+const layout = {
+  paper_bgcolor: "rgba(0,0,0,0)",
+  plot_bgcolor: "rgba(0,0,0,0)",
+  margin: { l:0, r:0, t:0, b:0 },
+  scene: {
+    bgcolor: "rgba(0,0,0,0)",
+    xaxis: { visible:false },
+    yaxis: { visible:false },
+    zaxis: { visible:false },
+    aspectmode: "data",
+    camera: {
+      eye: { x: 1.55, y: 1.35, z: 0.9 }
+    }
+  }
+};
 
-    const cr = Math.cos(S.rotateHeart);
-    const sr = Math.sin(S.rotateHeart);
-    const xr = x*cr - y*sr;
-    const yr = x*sr + y*cr;
+const config = {
+  displayModeBar: false,
+  responsive: true,
+  scrollZoom: false
+};
 
-    pts.p
+Plotly.newPlot(el, [trace], layout, config);
+
+// ======= Auto-rotate camera (рух) =======
+// (користувач може крутити вручну, але ми робимо плавний автоповорот)
+let start = performance.now();
+let userInteracted = false;
+
+el.on("plotly_relayout", () => {
+  // якщо користувач покрутив — не зупиняємо назавжди,
+  // просто ставимо паузу на трохи
+  userInteracted = true;
+  setTimeout(() => userInteracted = false, 1800);
+});
+
+function animate(){
+  const t = (performance.now() - start) / 1000;
+
+  if(!userInteracted){
+    const r = 1.9;
+    const x = r * Math.cos(t * 0.35);
+    const y = r * Math.sin(t * 0.35);
+    const z = 0.85 + 0.15*Math.sin(t * 0.6);
+
+    Plotly.relayout(el, {
+      "scene.camera.eye": { x, y, z }
+    });
+  }
+  requestAnimationFrame(animate);
+}
+
+animate();
