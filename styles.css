@@ -1,0 +1,102 @@
+@import url("https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600&display=swap");
+
+:root {
+  color-scheme: only dark;
+  --bg-1: #0a0a0f;
+  --bg-2: #120919;
+  --pink: #f6a2c3;
+  --hot: #ff5e9c;
+  --glow: rgba(255, 120, 180, 0.4);
+  --text: #ffd7e8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 20% 20%, #2a0f2b 0%, var(--bg-2) 35%, var(--bg-1) 80%);
+  font-family: "Comfortaa", "Trebuchet MS", sans-serif;
+  color: var(--text);
+}
+
+.scene {
+  position: relative;
+  width: min(90vw, 520px);
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+}
+
+.glow {
+  position: absolute;
+  inset: 8% 12% 20% 12%;
+  border-radius: 50% 50% 45% 45%;
+  background: radial-gradient(circle, rgba(255, 120, 180, 0.35) 0%, rgba(255, 120, 180, 0.02) 70%, transparent 100%);
+  filter: blur(6px);
+  opacity: 0.9;
+}
+
+.heart {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 0 18px rgba(255, 128, 186, 0.5));
+}
+
+text {
+  font-size: 22px;
+  letter-spacing: 2px;
+  fill: var(--pink);
+  text-shadow: 0 0 12px rgba(255, 170, 210, 0.85);
+}
+
+.ring-1 text {
+  font-size: 22px;
+  fill: #ffc0d9;
+}
+
+.ring-2 text {
+  font-size: 19px;
+  fill: #ff86b7;
+  opacity: 0.9;
+}
+
+.ring-3 text {
+  font-size: 17px;
+  fill: #f07aa8;
+  opacity: 0.8;
+}
+
+.caption {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: #ffd5e6;
+  text-shadow: 0 0 8px rgba(255, 120, 180, 0.6);
+}
+
+@media (max-width: 480px) {
+  text {
+    font-size: 18px;
+  }
+
+  .ring-2 text {
+    font-size: 16px;
+  }
+
+  .ring-3 text {
+    font-size: 14px;
+  }
+
+  .caption {
+    font-size: 16px;
+  }
+}

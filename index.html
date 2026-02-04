@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Для тебе</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="scene" aria-label="Валентинка">
+      <div class="glow"></div>
+      <svg class="heart" viewBox="0 0 600 540" role="img" aria-label="Серце з текстом по контуру">
+        <defs>
+          <path
+            id="heartPath"
+            d="M300 520 C120 400 40 260 80 160 C120 60 240 60 300 140 C360 60 480 60 520 160 C560 260 480 400 300 520 Z"
+          />
+        </defs>
+
+        <g class="ring ring-1">
+          <text>
+            <textPath href="#heartPath" startOffset="0%">
+              Я тебе люблю • I love you • Я тебе люблю • I love you •
+            </textPath>
+            <animate attributeName="startOffset" from="0%" to="100%" dur="12s" repeatCount="indefinite" />
+          </text>
+        </g>
+
+        <g class="ring ring-2">
+          <text>
+            <textPath href="#heartPath" startOffset="50%">
+              Я тебе люблю • I love you • Я тебе люблю • I love you •
+            </textPath>
+            <animate attributeName="startOffset" from="50%" to="150%" dur="16s" repeatCount="indefinite" />
+          </text>
+        </g>
+
+        <g class="ring ring-3">
+          <text>
+            <textPath href="#heartPath" startOffset="25%">
+              Я тебе люблю • I love you • Я тебе люблю • I love you •
+            </textPath>
+            <animate attributeName="startOffset" from="25%" to="125%" dur="20s" repeatCount="indefinite" />
+          </text>
+        </g>
+      </svg>
+
+      <div class="caption">
+        <p>Ти моє серце</p>
+      </div>
+    </main>
+  </body>
+</html>
