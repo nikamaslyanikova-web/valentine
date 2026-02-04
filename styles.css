@@ -2,10 +2,6 @@
 
 :root {
   color-scheme: only dark;
-  --bg: #000000;
-  --pink: #f5a6c8;
-  --hot: #ff6fb0;
-  --text: #ffd7e8;
 }
 
 * {
@@ -17,81 +13,19 @@ body {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: var(--bg);
+  background: #000;
   font-family: "Comfortaa", "Trebuchet MS", sans-serif;
-  color: var(--text);
 }
 
 .scene {
-  position: relative;
   width: min(90vw, 520px);
   aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
 }
 
-.heart {
+#heartCanvas {
   width: 100%;
-  height: auto;
-  overflow: visible;
-  filter: drop-shadow(0 0 14px rgba(255, 120, 180, 0.55));
-}
-
-text {
-  font-size: 20px;
-  letter-spacing: 1.5px;
-  fill: var(--pink);
-  text-shadow: 0 0 10px rgba(255, 160, 210, 0.9);
-}
-
-.caption {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  text-align: center;
-  font-size: 18px;
-  letter-spacing: 1px;
-  color: #ffd5e6;
-  text-shadow: 0 0 8px rgba(255, 120, 180, 0.6);
-}
-
-.ring {
-  transform-box: fill-box;
-  transform-origin: center;
-  filter: blur(0.2px);
-}
-
-.r1 {
-  transform: scale(1.02);
-  opacity: 0.95;
-}
-
-.r2 {
-  transform: scale(1.0);
-  opacity: 0.9;
-}
-
-.r3 {
-  transform: scale(0.985);
-  opacity: 0.85;
-}
-
-.r4 {
-  transform: scale(0.97);
-  opacity: 0.8;
-}
-
-.r5 {
-  transform: scale(0.955);
-  opacity: 0.75;
-}
-
-@media (max-width: 480px) {
-  text {
-    font-size: 18px;
-  }
-
-  .caption {
-    font-size: 16px;
-  }
+  height: 100%;
+  display: block;
 }
