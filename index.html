@@ -1,144 +1,35 @@
 <!doctype html>
 <html lang="uk">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Для тебе</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="scene" aria-label="Валентинка">
-      <canvas id="heartCanvas" aria-label="Серце з текстом" role="img"></canvas>
-    </main>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Валентинка ❤️</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <div class="badge">💌 ВАЛЕНТИНКА</div>
+    <h1>Я тебе люблю</h1>
+    <p class="sub">Натисни серце ✨</p>
 
-    <script>
-      const canvas = document.getElementById("heartCanvas");
-      const ctx = canvas.getContext("2d");
+    <section class="card">
+      <div class="stage">
+        <canvas id="heartCanvas"></canvas>
+      </div>
 
-      const phrase = "i love you ";
-      const fontFamily = "'Comfortaa', 'Trebuchet MS', sans-serif";
+      <button id="btn" class="btn">Відкрити послання</button>
 
-      let points = [];
-      let lengths = [];
-      let totalLength = 0;
+      <div id="msg" class="msg hidden">
+        <h2>Моє послання для тебе</h2>
+        <p>
+          Ти — моя найтепліша людина. Дякую, що ти є. ❤️<br/>
+          Хочу ще багато-багато наших днів разом.
+        </p>
+        <div class="sig">— Твоя Ніка</div>
+      </div>
+    </section>
+  </main>
 
-      function heartPoint(t) {
-        const x = 16 * Math.pow(Math.sin(t), 3);
-        const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-        return { x, y };
-      }
-
-      function buildPathSamples() {
-        points = [];
-        lengths = [0];
-        totalLength = 0;
-
-        const steps = 1200;
-        let prev = heartPoint(0);
-        points.push(prev);
-        for (let i = 1; i <= steps; i++) {
-          const t = (Math.PI * 2 * i) / steps;
-          const p = heartPoint(t);
-          const dx = p.x - prev.x;
-          const dy = p.y - prev.y;
-          const dist = Math.hypot(dx, dy);
-          totalLength += dist;
-          lengths.push(totalLength);
-          points.push(p);
-          prev = p;
-        }
-      }
-
-      function sampleAtLength(target) {
-        const l = ((target % totalLength) + totalLength) % totalLength;
-        let low = 0;
-        let high = lengths.length - 1;
-        while (low < high) {
-          const mid = Math.floor((low + high) / 2);
-          if (lengths[mid] < l) low = mid + 1;
-          else high = mid;
-        }
-        const i = Math.max(1, low);
-        const l0 = lengths[i - 1];
-        const l1 = lengths[i];
-        const t = l1 === l0 ? 0 : (l - l0) / (l1 - l0);
-        const p0 = points[i - 1];
-        const p1 = points[i];
-        return {
-          x: p0.x + (p1.x - p0.x) * t,
-          y: p0.y + (p1.y - p0.y) * t,
-          dx: p1.x - p0.x,
-          dy: p1.y - p0.y,
-        };
-      }
-
-      function resize() {
-        const size = Math.min(window.innerWidth, window.innerHeight);
-        canvas.width = size * devicePixelRatio;
-        canvas.height = size * devicePixelRatio;
-        canvas.style.width = `${size}px`;
-        canvas.style.height = `${size}px`;
-        ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-      }
-
-      function drawFrame(time) {
-        const t = time * 0.001;
-        const size = Math.min(canvas.width, canvas.height) / devicePixelRatio;
-
-        ctx.clearRect(0, 0, size, size);
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, size, size);
-
-        const scale = size * 0.018;
-        const centerX = size / 2;
-        const centerY = size / 2 + size * 0.05;
-
-        ctx.font = `${Math.max(12, size * 0.03)}px ${fontFamily}`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        const layers = [1.05, 1.01, 0.98, 0.95, 0.92];
-        const speeds = [0.12, 0.14, 0.16, 0.18, 0.2];
-        const opacities = [0.95, 0.9, 0.85, 0.8, 0.75];
-
-        for (let li = 0; li < layers.length; li++) {
-          const layerScale = scale * layers[li];
-          const spacing = size * 0.055;
-          const wordCount = Math.ceil(totalLength * layerScale / spacing);
-          const offset = t * totalLength * speeds[li];
-
-          ctx.fillStyle = `rgba(255, 168, 208, ${opacities[li]})`;
-          ctx.shadowColor = "rgba(255, 170, 210, 0.9)";
-          ctx.shadowBlur = size * 0.02;
-
-          for (let i = 0; i < wordCount; i++) {
-            const pos = sampleAtLength(i * spacing / layerScale + offset);
-            const x = centerX + pos.x * layerScale;
-            const y = centerY - pos.y * layerScale;
-            const angle = Math.atan2(-pos.dy, pos.dx);
-
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(angle);
-            ctx.fillText(phrase, 0, 0);
-            ctx.restore();
-          }
-        }
-
-        requestAnimationFrame(drawFrame);
-      }
-
-      function init() {
-        resize();
-        buildPathSamples();
-        requestAnimationFrame(drawFrame);
-      }
-
-      window.addEventListener("resize", () => {
-        resize();
-      });
-
-      init();
-    </script>
-  </body>
+  <script src="script.js"></script>
+</body>
 </html>
