@@ -1,193 +1,252 @@
-// const canvas = document.getElementById("c");
-// const ctx = canvas.getContext("2d", { alpha: true });
+// ======= Toggle message =======
+const btn = document.getElementById("btn");
+const msg = document.getElementById("msg");
+btn.addEventListener("click", () => {
+  msg.classList.toggle("hidden");
+  btn.textContent = msg.classList.contains("hidden") ? "Відкрити послання" : "Сховати послання";
+});
 
-// const btn = document.getElementById("btn");
-// const msg = document.getElementById("msg");
+// ======= Heart Canvas (reference-like) =======
+const canvas = document.getElementById("heartCanvas");
+const ctx = canvas.getContext("2d", { alpha: true });
 
-// btn.addEventListener("click", () => {
-//   msg.classList.toggle("hidden");
-//   btn.textContent = msg.classList.contains("hidden") ? "Відкрити послання" : "Сховати послання";
-// });
+const SETTINGS = {
+  text: "I love you",
+  fontSize: 18,              // близько як у референсі
+  letterSpacingPx: 2,
+  glowBlur: 10,
+  baseColor: "rgba(234,128,176,0.85)",
+  glowColor: "rgba(255,255,255,0.55)",
 
-// function resize() {
-//   const rect = canvas.getBoundingClientRect();
-//   const dpr = Math.min(2, window.devicePixelRatio || 1);
-//   canvas.width = Math.floor(rect.width * dpr);
-//   canvas.height = Math.floor(rect.height * dpr);
-//   // ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-//   buildPath();
-// }
-// window.addEventListener("resize", resize);
+  // Контур (ліва частина) — чистіша і менш "товста"
+  leftLanes: 6,
+  leftLaneSpacing: 10,
 
-// // ====== НАЛАШТУВАННЯ “як у референсі” ======
-// const TEXT = "i love you";          // можеш: "Кохаю тебе"
-// const fontSize = 18;                // як у реф
-// const innerLanes = 8;               // товщина контуру (всередину)
-// const laneSpacing = 12;             // відстань між доріжками (як у реф)
-// const speed = 40;                   // швидкість “бігу”
-// const tilt = -0.45;                 // нахил тексту (у реф він сильніший)
-// const rotateHeart = -0.12;          // легкий поворот серця
-// const scaleMul = 0.98;              // розмір серця
+  // Правий "обʼєм" — більше доріжок і ближче одна до одної (як у реф)
+  rightLanes: 12,
+  rightLaneSpacing: 7,
 
-// const color = "rgba(255, 170, 230, 0.72)";
-// const glow = "rgba(255, 170, 230, 0.9)";
-// const shadowBlur = 10;
+  // Крок по довжині (менше написів і більша відстань між ними)
+  wordGapMin: 34,            // мінімальна відстань між словами вздовж контуру
+  wordGapExtra: 10,          // + до ширини тексту (авто підстройка)
 
-// // ====== ГЕОМЕТРІЯ СЕРЦЯ ======
-// let path = [];      // {x,y,tx,ty,nx,ny,s}
-// let totalLen = 0;
+  // Рух
+  speed: 42,                 // px/сек уздовж контуру
+  tilt: -0.42,               // нахил слова (реф ~ -30deg)
+  rotateHeart: -0.18,        // повернути все серце
+  scaleMul: 1.00,
 
-// function heartParam(t) {
-//   // класична крива серця
-//   const x = 16 * Math.pow(Math.sin(t), 3);
-//   const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-//   return { x, y };
-// }
+  // “3D” зміщення вглиб по правій стороні
+  depthShiftX: 22,
+  depthShiftY: -10,
+};
 
-// function buildPath() {
-//   const w = canvas.getBoundingClientRect().width;
-//   const h = canvas.getBoundingClientRect().height;
+let path = [];    // {x,y,tx,ty,nx,ny,s}
+let totalLen = 0;
 
-//   const cx = w / 2;
-//   const cy = h / 2 + 10;
+function heartParam(t) {
+  // Класична крива серця (гарно схожа на референс)
+  const x = 16 * Math.pow(Math.sin(t), 3);
+  const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+  return { x, y };
+}
 
-//   // масштаб під canvas
-//   const base = Math.min(w, h) * 0.020 * scaleMul;
+function buildPath() {
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
 
-//   // точність контуру
-//   const N = 720;
+  const cx = w / 2;
+  const cy = h / 2 + 10;
 
-//   const pts = [];
-//   for (let i = 0; i <= N; i++) {
-//     const t = (i / N) * Math.PI * 2;
-//     let p = heartParam(t);
+  const base = Math.min(w, h) * 0.020 * SETTINGS.scaleMul;
 
-//     // ПІДГОНКА ФОРМИ ПІД РЕФ:
-//     // у референсі серце трохи ширше і з “м’якшим” низом
-//     p.x *= 1.12;
-//     p.y *= 1.02;
+  // гладкість
+  const N = 900;
 
-//     let x = p.x * base;
-//     let y = -p.y * base;
+  const pts = [];
+  for (let i = 0; i <= N; i++) {
+    const t = (i / N) * Math.PI * 2;
+    let p = heartParam(t);
 
-//     // поворот
-//     const cr = Math.cos(rotateHeart);
-//     const sr = Math.sin(rotateHeart);
-//     const xr = x * cr - y * sr;
-//     const yr = x * sr + y * cr;
+    // Підгонка пропорцій під референс (трохи ширше)
+    p.x *= 1.13;
+    p.y *= 1.02;
 
-//     pts.push({ x: cx + xr, y: cy + yr });
-//   }
+    let x = p.x * base;
+    let y = -p.y * base;
 
-//   path = [];
-//   totalLen = 0;
+    // поворот серця
+    const cr = Math.cos(SETTINGS.rotateHeart);
+    const sr = Math.sin(SETTINGS.rotateHeart);
+    const xr = x * cr - y * sr;
+    const yr = x * sr + y * cr;
 
-//   for (let i = 0; i < pts.length; i++) {
-//     const p = pts[i];
-//     const pPrev = pts[(i - 1 + pts.length) % pts.length];
-//     const pNext = pts[(i + 1) % pts.length];
+    pts.push({ x: cx + xr, y: cy + yr });
+  }
 
-//     // тангенс
-//     let tx = pNext.x - pPrev.x;
-//     let ty = pNext.y - pPrev.y;
-//     const tl = Math.hypot(tx, ty) || 1;
-//     tx /= tl; ty /= tl;
+  path = [];
+  totalLen = 0;
 
-//     // нормаль
-//     let nx = -ty;
-//     let ny = tx;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    const pPrev = pts[(i - 1 + pts.length) % pts.length];
+    const pNext = pts[(i + 1) % pts.length];
 
-//     if (i > 0) totalLen += Math.hypot(p.x - pts[i - 1].x, p.y - pts[i - 1].y);
+    let tx = pNext.x - pPrev.x;
+    let ty = pNext.y - pPrev.y;
+    const tl = Math.hypot(tx, ty) || 1;
+    tx /= tl; ty /= tl;
 
-//     path.push({ x: p.x, y: p.y, tx, ty, nx, ny, s: totalLen });
-//   }
+    const nx = -ty;
+    const ny = tx;
 
-//   totalLen += Math.hypot(pts[0].x - pts[pts.length - 1].x, pts[0].y - pts[pts.length - 1].y);
-// }
+    if (i > 0) totalLen += Math.hypot(p.x - pts[i - 1].x, p.y - pts[i - 1].y);
 
-// function pointAtLen(L) {
-//   L = ((L % totalLen) + totalLen) % totalLen;
+    path.push({ x: p.x, y: p.y, tx, ty, nx, ny, s: totalLen });
+  }
 
-//   for (let i = 1; i < path.length; i++) {
-//     if (path[i].s >= L) {
-//       const a = path[i - 1];
-//       const b = path[i];
-//       const segLen = (b.s - a.s) || 1;
-//       const t = (L - a.s) / segLen;
+  totalLen += Math.hypot(
+    pts[0].x - pts[pts.length - 1].x,
+    pts[0].y - pts[pts.length - 1].y
+  );
+}
 
-//       const x = a.x + (b.x - a.x) * t;
-//       const y = a.y + (b.y - a.y) * t;
+function pointAtLen(L) {
+  L = ((L % totalLen) + totalLen) % totalLen;
 
-//       let tx = a.tx + (b.tx - a.tx) * t;
-//       let ty = a.ty + (b.ty - a.ty) * t;
-//       const tl = Math.hypot(tx, ty) || 1;
-//       tx /= tl; ty /= tl;
+  for (let i = 1; i < path.length; i++) {
+    if (path[i].s >= L) {
+      const a = path[i - 1];
+      const b = path[i];
+      const segLen = (b.s - a.s) || 1;
+      const t = (L - a.s) / segLen;
 
-//       const nx = -ty;
-//       const ny = tx;
+      const x = a.x + (b.x - a.x) * t;
+      const y = a.y + (b.y - a.y) * t;
 
-//       return { x, y, tx, ty, nx, ny };
-//     }
-//   }
-//   return path[0];
-// }
+      let tx = a.tx + (b.tx - a.tx) * t;
+      let ty = a.ty + (b.ty - a.ty) * t;
+      const tl = Math.hypot(tx, ty) || 1;
+      tx /= tl; ty /= tl;
 
-// // ====== РЕНДЕР ======
-// resize();
+      const nx = -ty;
+      const ny = tx;
 
-// let t0 = performance.now();
+      return { x, y, tx, ty, nx, ny };
+    }
+  }
+  return path[0];
+}
 
-// function draw() {
-//   const now = performance.now();
-//   const time = (now - t0) / 1000;
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = Math.floor(rect.width * dpr);
+  canvas.height = Math.floor(rect.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  buildPath();
+}
+window.addEventListener("resize", resize);
+resize();
 
-//   const w = canvas.getBoundingClientRect().width;
-//   const h = canvas.getBoundingClientRect().height;
+function setupTextStyle() {
+  ctx.font = `600 ${SETTINGS.fontSize}px ui-sans-serif, system-ui`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = SETTINGS.baseColor;
+  ctx.shadowBlur = SETTINGS.glowBlur;
+  ctx.shadowColor = SETTINGS.glowColor;
+}
 
-//   ctx.clearRect(0, 0, w, h);
+function drawWord(x, y, ang, word, alpha) {
+  ctx.globalAlpha = alpha;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(ang);
+  // “letter-spacing” на canvas напряму нема — робимо вручну
+  const ls = SETTINGS.letterSpacingPx;
+  let xx = 0;
+  for (const ch of word) {
+    ctx.fillText(ch, xx, 0);
+    xx += ctx.measureText(ch).width + ls;
+  }
+  ctx.restore();
+}
 
-//   // стиль
-//   ctx.font = `600 ${fontSize}px ui-sans-serif, system-ui`;
-//   ctx.textAlign = "left";
-//   ctx.textBaseline = "middle";
-//   ctx.fillStyle = color;
-//   ctx.shadowBlur = shadowBlur;
-//   ctx.shadowColor = glow;
+let t0 = performance.now();
 
-//   // ВАЖЛИВО: робимо wordGap по реальній ширині слова, щоб не було каші
-//   const textW = ctx.measureText(TEXT).width;
-//   const wordGap = Math.max(34, textW + 10); // “як у реф” — помітна відстань
+function draw() {
+  const now = performance.now();
+  const time = (now - t0) / 1000;
 
-//   // Контур у референсі виглядає чистіше, бо “товщина” йде всередину,
-//   // тому offset беремо тільки В ОДИН БІК по нормалі (inner)
-//   for (let lane = 0; lane < innerLanes; lane++) {
-//     const offset = lane * laneSpacing;
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
 
-//     // легкий fade всередину (у реф зовнішній край яскравіший)
-//     ctx.globalAlpha = 0.85 - lane * 0.06;
+  ctx.clearRect(0, 0, w, h);
 
-//     const run = time * speed + lane * 9;
+  // чорне тло як у референсі (підкреслює неон)
+  ctx.save();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = "rgba(0,0,0,0.88)";
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
 
-//     for (let L = 0; L < totalLen; L += wordGap) {
-//       const p = pointAtLen(L + run);
+  setupTextStyle();
 
-//       // ВАЖЛИВО: offset “всередину” — беремо МІНУС нормаль
-//       const x = p.x - p.nx * offset;
-//       const y = p.y - p.ny * offset;
+  // wordGap під реальну ширину слова (як у референсі — не надто густо)
+  const baseW = ctx.measureText(SETTINGS.text).width + SETTINGS.wordGapExtra;
+  const wordGap = Math.max(SETTINGS.wordGapMin, baseW);
 
-//       // кут по тангенсу + нахил
-//       const ang = Math.atan2(p.ty, p.tx) + tilt;
+  // Малюємо по довжині контуру
+  // Розділяємо на ліву і праву сторону: на правій робимо “обʼєм”
+  const run = time * SETTINGS.speed;
 
-//       ctx.save();
-//       ctx.translate(x, y);
-//       ctx.rotate(ang);
-//       ctx.fillText(TEXT, 0, 0);
-//       ctx.restore();
-//     }
-//   }
+  // Невелике "пульс" світіння
+  const pulse = 0.85 + 0.15 * Math.sin(time * 2.2);
 
-//   ctx.globalAlpha = 1;
-//   requestAnimationFrame(draw);
-// }
+  for (let L = 0; L < totalLen; L += wordGap) {
+    const p = pointAtLen(L + run);
 
-// draw();
+    // Кут по дотичній + нахил
+    const ang = Math.atan2(p.ty, p.tx) + SETTINGS.tilt;
+
+    // визначаємо “праву” сторону серця (за x відносно центру)
+    const isRight = p.x > w / 2;
+
+    if (!isRight) {
+      // Ліва сторона: 6 доріжок, чисто
+      for (let i = 0; i < SETTINGS.leftLanes; i++) {
+        const off = i * SETTINGS.leftLaneSpacing;
+        const x = p.x + p.nx * off;
+        const y = p.y + p.ny * off;
+
+        const a = (0.92 - i * 0.10) * pulse;
+        drawWord(x, y, ang, SETTINGS.text, a);
+      }
+    } else {
+      // Права сторона: більше доріжок + "depth" зсув (як у референсі)
+      for (let i = 0; i < SETTINGS.rightLanes; i++) {
+        const off = i * SETTINGS.rightLaneSpacing;
+
+        // контурні доріжки
+        const x1 = p.x + p.nx * off;
+        const y1 = p.y + p.ny * off;
+
+        // "обʼєм" зміщуємо по діагоналі (праворуч-вгору) і трохи слабше
+        const depthK = i / (SETTINGS.rightLanes - 1);
+        const dx = SETTINGS.depthShiftX * depthK;
+        const dy = SETTINGS.depthShiftY * depthK;
+
+        const a = (0.95 - i * 0.055) * pulse;
+        drawWord(x1 + dx, y1 + dy, ang, SETTINGS.text, a);
+      }
+    }
+  }
+
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(draw);
+}
+
+draw();
